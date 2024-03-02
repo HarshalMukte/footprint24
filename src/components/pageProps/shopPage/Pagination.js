@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import Product from "../../home/Products/Product";
 import { paginationItems } from "../../../constants";
+import { useSelector } from "react-redux";
 
 const items = paginationItems;
 
 function Items({ currentItems }) {
-  console.log(currentItems);
   return (
     <>
       {currentItems &&
@@ -27,47 +27,86 @@ function Items({ currentItems }) {
 }
 
 const Pagination = ({ itemsPerPage, sortValue }) => {
-  // Here we use item offsets; we could also use page offsets
-  // following the API or data you're working with.
+  const [products, setProducts] = useState(items);
   const [itemOffset, setItemOffset] = useState(0);
   const [itemStart, setItemStart] = useState(1);
+  const endOffset = itemOffset + itemsPerPage;
+
+
+  //This is use for the reducer
+  const filterValue = useSelector((state) => state.filter);
+  useEffect(() => {
+    function filterFunction() {
+      switch (filterValue) {
+        case "newArival":
+          setProducts(() => items.filter((item) => item.badge));
+          break;
+        case "accessories":
+          setProducts(() =>
+            items.filter((item) => item.categories === "accesories")
+          );
+          break;
+        case "electronics":
+          setProducts(() =>
+            items.filter((item) => item.categories === "electronics")
+          );
+          break;
+        case "clothing":
+          setProducts(() =>
+            items.filter((item) => item.categories === "clothing")
+          );
+          break;
+        default:
+          break;
+      }
+    }
+    filterFunction();
+  }, [filterValue]);
+
+  useEffect(() => {
+    const sortingFunction = () => {
+      switch (sortValue) {
+        case "LowPrice":
+          setProducts(
+            items
+              .slice()
+              .sort((a, b) => parseFloat(a.price) - parseFloat(b.price))
+          );
+          break;
+        case "HighPrice":
+          setProducts(
+            items
+              .slice()
+              .sort((a, b) => parseFloat(b.price) - parseFloat(a.price))
+          );
+          break;
+          break;
+        case "Rating":
+          setProducts(() => items.sort((a, b) => a.rating - b.rating));
+          break;
+        case "NewArival":
+          setProducts(() => items.filter((e) => e.badge));
+          break;
+        case "BestSellers":
+          setProducts(() => items.filter((ele) => ele.rating > 3));
+          break;
+      }
+    };
+    sortingFunction();
+  }, [sortValue]);
 
   // Simulate fetching items from another resources.
   // (This could be items from props; or items loaded in a local state
   // from an API endpoint with useEffect and useState)
-  const endOffset = itemOffset + itemsPerPage;
-  //filtering the items on the basic of filterValue
-  let sortedData = items;
-  switch (sortValue) {
-    case "LowPrice":
-      sortedData = items.sort((a, b) => a.price - b.price)
-      break;
-    case "HighPrice":
-      sortedData = items.sort((a, b) => b.price - a.price)
-      break;
-    case "Rating":
-      sortedData = items.sort((a, b) => a.rating - b.rating)
-      break;
-    case "NewArival":
-      sortedData = items.filter(e => e.badge)
-      break;
-    case "BestSellers":
-      sortedData = items.filter(ele => ele.rating > 3)
-      break;
-    default:
-      break;
-  }
+
   //   console.log(`Loading items from ${itemOffset} to ${endOffset}`);
-  const currentItems = sortedData.slice(itemOffset, endOffset);
+  const currentItems = products.slice(itemOffset, endOffset);
   const pageCount = Math.ceil(items.length / itemsPerPage);
 
   // Invoke when user click to request another page.
   const handlePageClick = (event) => {
     const newOffset = (event.selected * itemsPerPage) % items.length;
     setItemOffset(newOffset);
-    // console.log(
-    //   `User requested page number ${event.selected}, which is offset ${newOffset},`
-    // );
     setItemStart(newOffset);
   };
 
